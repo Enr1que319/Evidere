@@ -62,27 +62,46 @@ svg.append("g")
 svg.append("g")
   .call(d3.axisLeft(y));
 
+// Crear el tooltip
+const tooltip = d3.select("#chart")
+  .append("div")
+  .style("position", "absolute")
+  .style("background-color", "white")
+  .style("border", "solid")
+  .style("border-width", "1px")
+  .style("border-radius", "5px")
+  .style("padding", "10px")
+  .style("display", "none");
 
-// Tooltip
-// const tip = d3.tip().attr('class', 'd3-tip').html(d => `Fecha: ${d.date.toLocaleDateString()}<br>Valor: ${d.value}`);
-// svg.call(tip);
+// Función para mostrar el tooltip
+function showTooltip(event, data) {
+  const date = x.invert(d3.pointer(event)[0]);
+  const bisectDate = d3.bisector(d => d.date).left;
+  const i = bisectDate(data, date);
+  const d0 = data[i - 1];
+  const d1 = data[i];
+  const dClosest = !d0 || !d1 ? d1 || d0 : date - d0.date > d1.date - date ? d1 : d0;
 
-// // Líneas de cuadrícula horizontal
-// svg.append("g")
-//   .attr("class", "grid")
-//   .call(d3.axisLeft(y)
-//     .tickSize(-width)
-//     .tickFormat(''));
+  tooltip
+    .html(`Fecha: ${dClosest.date.toLocaleDateString()}<br>Valor: ${dClosest.value}`)
+    .style("left", (event.pageX + 15) + "px")
+    .style("top", (event.pageY - 28) + "px")
+    .style("display", "block");
+}
+
+// Función para ocultar el tooltip
+function hideTooltip() {
+  tooltip.style("display", "none");
+}
 
 // Función para añadir línea, círculo y animación
-function addLineAndCircle(data, imageUrl) {
-
+function addLineAndCircle(data, imageUrl, color) {
   // Línea del gráfico con animación
   const path = svg.append("path")
     .datum(data)
     .attr("fill", "none")
-    .attr("stroke", "steelblue")
-    .attr("stroke-width", 1.5)
+    .attr("stroke", color)
+    .attr("stroke-width", 2.5)
     .attr("d", line);
 
   // Obtener la longitud total del camino
@@ -103,6 +122,17 @@ function addLineAndCircle(data, imageUrl) {
     .attr("height", 30) // Altura de la imagen
     .attr("class", "circular-image")
     .attr("transform", `translate(${x(data[0].date) - 15},${y(data[0].value) - 15})`); // Posición inicial
+
+  // Añadir el área invisible para capturar los eventos del ratón
+  svg.append("path")
+    .datum(data)
+    .attr("fill", "none")
+    .attr("stroke", "none")
+    .attr("pointer-events", "all")
+    .attr("d", line)
+    .on("mouseover", (event) => showTooltip(event, data))
+    .on("mousemove", (event) => showTooltip(event, data))
+    .on("mouseout", hideTooltip);
 
   // Función para mover la imagen a lo largo de la línea
   function transition() {
@@ -127,6 +157,6 @@ function addLineAndCircle(data, imageUrl) {
   transition();
 }
 
-addLineAndCircle(data1, "https://upload.wikimedia.org/wikipedia/commons/e/ea/Morena_logo_%28Mexico%29.svg");
-addLineAndCircle(data2, "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Logo_Partido_Movimiento_Ciudadano_%28M%C3%A9xico%29.svg/2048px-Logo_Partido_Movimiento_Ciudadano_%28M%C3%A9xico%29.svg.png");
-addLineAndCircle(data3, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScELaTLZWtSZVxlgSKtzUKPstEu4-6iH-HUXsp-AaHRA&s");
+addLineAndCircle(data1, "https://upload.wikimedia.org/wikipedia/commons/e/ea/Morena_logo_%28Mexico%29.svg", "rgb(144,0,0)");
+addLineAndCircle(data2, "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Logo_Partido_Movimiento_Ciudadano_%28M%C3%A9xico%29.svg/2048px-Logo_Partido_Movimiento_Ciudadano_%28M%C3%A9xico%29.svg.png", "orange");
+addLineAndCircle(data3, "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcScELaTLZWtSZVxlgSKtzUKPstEu4-6iH-HUXsp-AaHRA&s", "steelblue");
